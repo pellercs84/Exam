@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exam.DataAccessLayer", "Exam.DataAccessLayer\Exam.DataAccessLayer.csproj", "{6937958C-9F84-457C-8A03-2D42B1A9DA72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exam.WebApplication", "Exam.WebApplication\Exam.WebApplication.csproj", "{94169BB1-91B0-467E-9443-81A3584641CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6937958C-9F84-457C-8A03-2D42B1A9DA72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6937958C-9F84-457C-8A03-2D42B1A9DA72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6937958C-9F84-457C-8A03-2D42B1A9DA72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6937958C-9F84-457C-8A03-2D42B1A9DA72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94169BB1-91B0-467E-9443-81A3584641CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94169BB1-91B0-467E-9443-81A3584641CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94169BB1-91B0-467E-9443-81A3584641CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94169BB1-91B0-467E-9443-81A3584641CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

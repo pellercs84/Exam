@@ -1,0 +1,372 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Product App</title>
+    <link href="Content/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6">
+                <h2>Home - Products</h2>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-2">
+            <table id="productTable"
+                   class="table table-bordered
+                 table-condensed table-striped">
+                <thead>
+                    <tr>
+                        <th>Logo</th>
+                        <th>Product Name</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                        <th>Products</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <button type="button" id="addButton"
+                    class="btn btn-primary"
+                    onclick="addClick();">
+                Add Product
+            </button>
+        </div>
+    </div>
+    <div class="row" style="display: none" id="editorForm">
+        <div class="col-sm-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    Product Details
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="productname">Product Name</label>
+                        <input type="text" id="productname" class="form-control" />
+                        <label for="fileUpload" id="fileUploadLabel">Logo</label>
+                        <input id="fileUpload" type="file" />
+                        <input type="hidden" id="uploadedFileId" value="0" />
+                        <input id="btnUploadFile" type="button" value="Upload File" />
+                        <div id="percentId" class="progressClass"></div>
+                    </div>
+                    <input type="hidden" id="productid" value="0" />
+                </div>
+                <div class="panel-footer">
+                    <button type="button" id="updateButton"
+                            class="btn btn-primary"
+                            onclick="updateClick();">
+                        Update
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   
+    
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.0.3.min.js"></script>
+    <script>
+        var uri = 'api/products';
+        $(document).ready(function () {
+            $('#btnUploadFile').on('click', function () {
+                var data = new FormData();
+                var files = $("#fileUpload").get(0).files;
+                if (files.length > 0) {
+                    data.append("UploadedImage", files[0]);
+                }
+
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4) {
+                        var response = JSON.parse(xhr.response);
+                        fileUploadSuccess(response);
+                    }
+                };
+                xhr.upload.addEventListener("progress", function (evt) {
+                    if (evt.lengthComputable) {
+                        var progress = Math.ceil(evt.loaded * 100 / evt.total);
+                        //$("#percentId").val(progress);
+                        document.getElementById('percentId').visible = true;
+                        document.getElementById('percentId').innerHTML = progress + " %";
+                        document.getElementById('percentId').width = progress * 2;
+                        document.getElementById('percentId').maxWidth = progress * 2;
+                    }
+                }, false);
+                xhr.open("POST", "/api/fileupload/uploadfile");
+                xhr.send(data);
+
+            });
+            productList();
+        });
+        
+        function fileUploadSuccess(uploadedfile) {
+            $("#uploadedFileId").val(uploadedfile);
+        }
+
+        function productList() {
+            // Call Web API to get a list of Product
+            var manufacturerId = getUrlVars();
+
+            $.ajax({
+                url: 'api/products/' + manufacturerId['ManufacturerId'],
+                type: 'GET',
+                dataType: 'json',
+                success: function (products) {
+                    productListSuccess(products);
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+        function productListSuccess(products) {
+            // Iterate over the collection of data
+            $.each(products, function (index, item) {
+                // Add a row to the product table
+                productAddRow(item);
+            });
+        }
+
+        function productAddRow(product) {
+            // Check if <tbody> tag exists, add one if not
+            if ($("#productTable tbody").length == 0) {
+                $("#productTable").append("<tbody></tbody>");
+            }
+            // Append row to <table>
+            $("#productTable tbody").append(
+              productBuildTableRow(product));
+        }
+
+        function productBuildTableRow(product) {
+            var ret =
+              "<tr>" +
+                  "<td><div class=\"logoClass\"><img src=\"\UploadedFiles\\" + product.ImagePath + "\"</img></div></td>" +
+                  "<td>" + product.Name + "</td>" +
+                  "<td>" +
+                      "<button type='button' " +
+                        "onclick='productGet(this);' " +
+                        "class='btn btn-default' " +
+                        "data-id='" + product.ID + "'>" +
+                        "<span class='glyphicon glyphicon-edit' />"
+                      + "</button>" +
+                  "</td >" +
+        
+                  "<td>" +
+                      "<button type='button' " +
+                        "onclick='productDelete(this);' " +
+                        "class='btn btn-default' " +
+                        "data-id='" + product.ID + "'>" +
+                        "<span class='glyphicon glyphicon-minus' />"
+                      + "</button>" +
+                  "</td >" +
+
+                  "<td>" +
+                      "<button type='button' " +
+                        "onclick='productProducts(this);' " +
+                        "class='btn btn-default' " +
+                        "data-id='" + product.ID + "'>" +
+                        "<span class='glyphicon glyphicon-search' />"
+                      + "</button>" +
+                  "</td >" +
+              "</tr>";
+            return ret;
+        }
+
+        function formatItem(item) {
+            return item.Name + ': $' + item.Price;
+        }
+
+        function find() {
+            var id = $('#productId').val();
+            $.getJSON(uri + '/' + id)
+                .done(function (data) {
+                    $('#product').text(formatItem(data));
+                })
+                .fail(function (jqXHR, textStatus, err) {
+                    $('#product').text('Error: ' + err);
+                });
+        }
+        function productGet(product) {
+            $("#editorForm").show();
+            // Get product id from data- attribute
+            var id = $(product).data("id");
+
+            // Store product id in hidden field
+            $("#productid").val(id);
+
+            // Call Web API to get a Product
+            $.ajax({
+                url: "/api/products/" + id,
+                type: 'GET',
+                dataType: 'json',
+                success: function (product) {
+                    productToFields(product);
+
+                    // Change Update Button Text
+                    $("#updateButton").text("Update");
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+        function productToFields(product) {
+            $("#productname").val(product.Name);
+            $("#fileUpload").val(product.ImagePath);
+            $("#uploadedFileId").val(product.ImagePath);
+            $("#percentId").visible = false;
+        }
+
+        // Handle click event on Update button
+        function updateClick() {
+            var manufacturerId = getUrlVars();
+
+            Product = new Object();
+            Product.Name = $("#productname").val();
+            Product.ID = $("#productid").val();
+            Product.Manufacturer_ID = manufacturerId['ManufacturerId'];
+            Product.ImagePath = $("#uploadedFileId").val();
+            
+            if ($("#updateButton").text().trim() == "Add") {
+                productAdd(Product);
+            } else {
+                productUpdate(Product);
+            }
+        }
+
+
+        function productUpdate(product) {
+            var manufacturerId = getUrlVars();
+            var url = "/api/products/" + product.ID + "/" + manufacturerId['ManufacturerId'];
+
+            // Call Web API to update product
+            $.ajax({
+                url: url,
+                type: 'PUT',
+                contentType: "application/json;charset=utf-8",
+                data: JSON.stringify(product),
+                success: function (product) {
+                    productUpdateSuccess(product);
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+        function productUpdateSuccess(product) {
+            productUpdateInTable(product);
+            $("#editorForm").hide();
+        }
+
+        // Update product in <table>
+        function productUpdateInTable(product) {
+            // Find Product in <table>
+            var row = $("#productTable button[data-id='" + product.ID + "']").parents("tr")[0];
+            // Add changed product to table
+            $(row).after(productBuildTableRow(product));
+            // Remove original product
+            $(row).remove();
+            // Clear form fields
+            formClear();
+
+            // Change Update Button Text
+            $("#updateButton").text("Add");
+        }
+
+        function productAdd(product) {
+            $.ajax({
+                url: "/api/products",
+                type: 'POST',
+                contentType:
+                   "application/json;charset=utf-8",
+                data: JSON.stringify(product),
+                success: function (product) {
+                    productAddSuccess(product);
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+        function productAddSuccess(product) {
+            productAddRow(product);
+            $("#editorForm").hide();
+            formClear();
+        }
+
+        // Delete product from <table>
+        function productDelete(product) {
+            var id = $(product).data("id");
+
+            // Call Web API to delete an item
+            $.ajax({
+                url: "/api/products/" + id,
+                type: 'DELETE',
+                success: function (result) {
+                    $(product).parents("tr").remove();
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+        // Delete product from <table>
+        function productProducts(product) {
+            var id = $(product).data("id");
+
+            document.location.href = "/api/products/" + id;
+        }
+
+
+        function handleException(request, message,
+                         error) {
+            var msg = "";
+            msg += "Code: " + request.status + "\n";
+            msg += "Text: " + request.statusText + "\n";
+            if (request.responseJSON != null) {
+                msg += "Message" +
+                    request.responseJSON.Message + "\n";
+            }
+            alert(msg);
+        }
+
+        function formClear() {
+            $("#productname").val("");
+            $("#fileUpload").val("");
+            $("#uploadedFileId").val("");
+            $("#percentId").visible = false;
+        }
+        function addClick() {
+            $("#editorForm").show();
+            $("#updateButton").text("Add");
+            formClear();
+        }
+
+        function getUrlVars() {
+            var vars = [], hash;
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            for (var i = 0; i < hashes.length; i++) {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        }
+
+        var Product = {
+            Name: "",
+        }
+    </script>
+</body>
+</html>

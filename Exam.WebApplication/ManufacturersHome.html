@@ -1,0 +1,364 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Manufacturer App</title>
+    <link href="Content/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6">
+                <h2>Home - Manufacturers</h2>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-2">
+            <table id="manufacturerTable"
+                   class="table table-bordered
+                 table-condensed table-striped">
+                <thead>
+                    <tr>
+                        <th>Logo</th>
+                        <th>Manufacturer Name</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                        <th>Products</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <button type="button" id="addButton"
+                    class="btn btn-primary"
+                    onclick="addClick();">
+                Add Manufacturer
+            </button>
+        </div>
+    </div>
+    <div class="row" style="display: none" id="editorForm">
+        <div class="col-sm-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    Manufacturer Details
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="manufacturername">Manufacturer Name</label>
+                        <input type="text" id="manufacturername" class="form-control" />
+                        
+                        <label for="fileUpload" id="fileUploadLabel">Logo</label>
+                        <input id="fileUpload" type="file" />
+                        <input type="hidden" id="uploadedFileId" value="0" />
+                        <input id="btnUploadFile" type="button" value="Upload File" />
+                        <div id="percentId" class="progressClass"></div>
+
+                    </div>
+                    <input type="hidden" id="manufacturerid" value="0" />
+                </div>
+                <div class="panel-footer">
+                    <button type="button" id="updateButton"
+                            class="btn btn-primary"
+                            onclick="updateClick();">
+                        Update
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <!--<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.0.3.min.js"></script>-->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script>
+        var uri = 'api/manufacturers';
+        $(document).ready(function () {
+        $('#btnUploadFile').on('click', function () {
+
+            var data = new FormData();
+            var files = $("#fileUpload").get(0).files;
+            if (files.length > 0) {
+                data.append("UploadedImage", files[0]);
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+                   var response = JSON.parse(xhr.response);
+                   fileUploadSuccess(response);
+                }
+            };
+            xhr.upload.addEventListener("progress", function (evt) {
+                if (evt.lengthComputable) {
+                    var progress = Math.ceil(evt.loaded * 100 / evt.total);
+                    //$("#percentId").val(progress);
+                    document.getElementById('percentId').visible = true;
+                    document.getElementById('percentId').innerHTML = progress+" %";
+                    document.getElementById('percentId').width = progress *2;
+                    document.getElementById('percentId').maxWidth = progress *2;
+                }
+            }, false);
+            xhr.open("POST", "/api/fileupload/uploadfile");
+            xhr.send(data);
+
+        }); 
+
+        manufacturerList();
+    });
+
+    function fileUploadSuccess(uploadedfile) {
+       $("#uploadedFileId").val(uploadedfile);
+    }
+        
+    function manufacturerList() {
+    // Call Web API to get a list of Product
+    $.ajax({
+        url: '/api/manufacturers/',
+        type: 'GET',
+        dataType: 'json',
+        success: function (manufacturers) {
+            manufacturerListSuccess(manufacturers);
+        },
+        error: function (request, message, error) {
+            handleException(request, message, error);
+        }
+    });
+    }
+
+    function manufacturerListSuccess(manufacturers) {
+        // Iterate over the collection of data
+        $.each(manufacturers, function (index, item) {
+            // Add a row to the manufacturer table
+            manufacturerAddRow(item);
+        });
+    }
+
+    function manufacturerAddRow(manufacturer) {
+        // Check if <tbody> tag exists, add one if not
+        if ($("#manufacturerTable tbody").length == 0) {
+            $("#manufacturerTable").append("<tbody></tbody>");
+        }
+        // Append row to <table>
+        $("#manufacturerTable tbody").append(
+          manufacturerBuildTableRow(manufacturer));
+    }
+
+    function manufacturerBuildTableRow(manufacturer) {
+        var ret =
+          "<tr>" +
+              "<td><div class=\"logoClass\"><img src=\"\UploadedFiles\\"+ manufacturer.ImagePath + "\"</img></div></td>" +
+              "<td>" + manufacturer.Name + "</td>" +
+              "<td>" +
+                  "<button type='button' " +
+                    "onclick='manufacturerGet(this);' " +
+                    "class='btn btn-default' " +
+                    "data-id='" + manufacturer.ID + "'>" +
+                    "<span class='glyphicon glyphicon-edit' />"
+                  + "</button>" +
+              "</td >" +
+
+              "<td>" +
+                  "<button type='button' " +
+                    "onclick='manufacturerDelete(this);' " +
+                    "class='btn btn-default' " +
+                    "data-id='" + manufacturer.ID + "'>" +
+                    "<span class='glyphicon glyphicon-minus' />"
+                  + "</button>" +
+              "</td >" +
+
+              "<td>" +
+                  "<button type='button' " +
+                    "onclick='manufacturerProducts(this);' " +
+                    "class='btn btn-default' " +
+                    "data-id='" + manufacturer.ID + "'>" +
+                    "<span class='glyphicon glyphicon-search' />"
+                  + "</button>" +
+              "</td >" +
+          "</tr>";
+        return ret;
+    }
+
+    function formatItem(item) {
+        return item.Name + ': $' + item.Price;
+    }
+
+    function find() {
+        var id = $('#manufacturerId').val();
+        $.getJSON(uri + '/' + id)
+            .done(function (data) {
+                $('#manufacturer').text(formatItem(data));
+            })
+            .fail(function (jqXHR, textStatus, err) {
+                $('#manufacturer').text('Error: ' + err);
+            });
+    }
+    function manufacturerGet(manufacturer) {
+        $("#editorForm").show();
+        // Get product id from data- attribute
+        var id = $(manufacturer).data("id");
+
+        // Store product id in hidden field
+        $("#manufacturerid").val(id);
+
+        // Call Web API to get a Product
+        $.ajax({
+            url: "/api/manufacturers/" + id,
+            type: 'GET',
+            dataType: 'json',
+            success: function (product) {
+                manufacturerToFields(product);
+
+                // Change Update Button Text
+                $("#updateButton").text("Update");
+            },
+            error: function (request, message, error) {
+                handleException(request, message, error);
+            }
+        });
+    }
+
+    function manufacturerToFields(manufacturer) {
+        $("#manufacturername").val(manufacturer.Name);
+        $("#fileUpload").val(manufacturer.ImagePath);
+        $("#uploadedFileId").val(manufacturer.ImagePath);
+        $("#percentId").visible = false;
+        
+    }
+
+    // Handle click event on Update button
+    function updateClick() {
+
+        Manufacturer = new Object();
+        Manufacturer.Name = $("#manufacturername").val();
+        Manufacturer.ID = $("#manufacturerid").val();
+        Manufacturer.ImagePath = $("#uploadedFileId").val();
+        if ($("#updateButton").text().trim() ==
+                  "Add") {
+            manufacturerAdd(Manufacturer);
+        } else {
+            manufacturerUpdate(Manufacturer);
+        }
+    }
+
+
+    function manufacturerUpdate(manufacturer) {
+        var url = "/api/manufacturers/" + manufacturer.ID;
+
+        // Call Web API to update product
+        $.ajax({
+            url: url,
+            type: 'PUT',
+            contentType: "application/json;charset=utf-8",
+            data: JSON.stringify(manufacturer),
+            success: function (manufacturer) {
+                manufacturerUpdateSuccess(manufacturer);
+            },
+            error: function (request, message, error) {
+                handleException(request, message, error);
+            }
+        });
+    }
+
+    function manufacturerUpdateSuccess(manufacturer) {
+        manufacturerUpdateInTable(manufacturer);
+        $("#editorForm").hide();
+    }
+
+    // Update product in <table>
+    function manufacturerUpdateInTable(manufacturer) {
+        // Find Product in <table>
+        var row = $("#manufacturerTable button[data-id='" + manufacturer.ID + "']").parents("tr")[0];
+        // Add changed manufacturer to table
+        $(row).after(manufacturerBuildTableRow(manufacturer));
+        // Remove original product
+        $(row).remove();
+        // Clear form fields
+        formClear();
+
+        // Change Update Button Text
+        $("#updateButton").text("Add");
+    }
+
+    function manufacturerAdd(manufacturer) {
+        $.ajax({
+            url: "/api/manufacturers",
+            type: 'POST',
+            contentType:
+               "application/json;charset=utf-8",
+            data: JSON.stringify(manufacturer),
+            success: function (manufacturer) {
+                manufacturerAddSuccess(manufacturer);
+            },
+            error: function (request, message, error) {
+                handleException(request, message, error);
+            }
+        });
+    }
+
+    function manufacturerAddSuccess(manufacturer) {
+        manufacturerAddRow(manufacturer);
+        $("#editorForm").hide();
+        formClear();
+    }
+
+    // Delete manufacturer from <table>
+    function manufacturerDelete(manufacturer) {
+        var id = $(manufacturer).data("id");
+
+        // Call Web API to delete an item
+        $.ajax({
+            url: "/api/manufacturers/" + id,
+            type: 'DELETE',
+            success: function (result) {
+                $(manufacturer).parents("tr").remove();
+            },
+            error: function (request, message, error) {
+                handleException(request, message, error);
+            }
+        });
+    }
+
+    // Delete manufacturer from <table>
+    function manufacturerProducts(manufacturer) {
+        var id = $(manufacturer).data("id");
+
+        window.location("/ProductsHome.html?ManufacturerId=" + id);
+    }
+
+
+    function handleException(request, message,
+                     error) {
+        var msg = "";
+        msg += "Code: " + request.status + "\n";
+        msg += "Text: " + request.statusText + "\n";
+        if (request.responseJSON != null) {
+            msg += "Message" +
+                request.responseJSON.Message + "\n";
+        }
+        alert(msg);
+    }
+
+    function formClear() {
+        $("#manufacturername").val("");
+        $("#fileUpload").val("");
+        $("#uploadedFileId").val("");
+        $("#percentId").visible = false;
+
+    }
+    function addClick() {
+        $("#editorForm").show();
+        $("#updateButton").text("Add");
+        formClear();
+    }
+
+    
+    var Manufacturer = {
+        Name: "",
+    }
+    </script>
+
+</body>
+</html>
